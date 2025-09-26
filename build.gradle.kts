@@ -1,5 +1,4 @@
-import java.io.ByteArrayOutputStream
-import java.nio.charset.Charset
+import org.gradle.internal.extensions.stdlib.capitalized
 
 plugins {
     kotlin("jvm") version "1.9.25"
@@ -11,31 +10,7 @@ plugins {
     id("maven-publish")
 }
 
-fun versionFromScript(): String {
-    val fromScript = {
-        val stdout = ByteArrayOutputStream()
-        exec {
-            workingDir = project.rootDir
-            commandLine = listOf("bash", "version.sh")
-            standardOutput = stdout
-        }
-        stdout.toString().trim()
-    }
-
-    return File(project.rootDir, ".version")
-        .let {
-            if (it.exists()) it.readLines(Charset.defaultCharset())
-                .map(String::trim)
-                .filter(String::isNotEmpty)
-                .firstOrNull { !it.startsWith("#") }
-            else null
-        }
-        ?: System.getenv("VERSION")?.ifBlank { null }
-        ?: fromScript()
-}
-
 group = "net.agl.security"
-version = versionFromScript()
 
 java {
     toolchain {
@@ -65,54 +40,76 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-val publishVersion = if (version.toString().contains("SNAPSHOT"))
-    version.toString()
-else Regex("^(\\d+\\.\\d+\\.\\d+)(.+)?\$")
-    .find(version.toString())
-    ?.let { it.groups[1]?.value + (it.groups[2]?.let { "-SNAPSHOT" } ?: "") }
-    ?: ""
-
-publishing {
-    publications {
-        create<MavenPublication>("mavenJava") {
-            from(components["java"])
-
-            groupId = project.group.toString()
-            artifactId = project.name
-            version = publishVersion
-        }
-    }
-
-    repositories {
-        maven {
-            name = "nexus"
-            url = uri(
-                if (publishVersion.contains("SNAPSHOT"))
-                    project.findProperty("maven.publish.snapshots") as? String
-                        ?: System.getenv("MAVEN_PUBLISH_SNAPSHOTS")
-                else
-                    project.findProperty("maven.publish.releases") as? String
-                        ?: System.getenv("MAVEN_PUBLISH_RELEASES")
-            )
-            credentials {
-                username =
-                    project.findProperty("maven.publish.username") as? String
-                        ?: System.getenv("MAVEN_PUBLISH_USERNAME")
-                password =
-                    project.findProperty("maven.publish.password") as? String
-                        ?: System.getenv("MAVEN_PUBLISH_PASSWORD")
-            }
-        }
-    }
-}
-
 kotlin {
     compilerOptions {
         freeCompilerArgs.addAll("-Xjsr305=strict")
     }
 }
 
-tasks.withType<Test> {
-    useJUnitPlatform()
-    jvmArgs = listOf("-javaagent:${mockitoAgent.asPath}") + (jvmArgs ?: listOf())
+tasks {
+    withType<Test> {
+        useJUnitPlatform()
+        jvmArgs?.add(0, "-javaagent:${mockitoAgent.asPath}")
+    }
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("aglNexus") {
+            val projectVersion = project.version.toString()
+            version = if (projectVersion.endsWith("-SNAPSHOT")) projectVersion
+            else Regex("""^(\d+\.\d+\.\d+).+$""").matchEntire(projectVersion)?.groupValues?.get(1)
+                ?.plus("-SNAPSHOT")
+                ?: projectVersion
+            groupId = project.group.toString()
+            artifactId = project.name
+            from(components["java"])
+        }
+    }
+
+    repositories {
+        val username = findProperty("agl.repo.publish.username")!! as String
+        val password = findProperty("agl.repo.publish.password")!! as String
+        listOf("agl.repo.url.releases", "agl.repo.url.snapshots").forEach {
+            maven {
+                name = "aglNexus${it.split(".").last().capitalized()}"
+                url = uri(findProperty(it)!! as String)
+                credentials {
+                    this.username = username
+                    this.password = password
+                }
+            }
+        }
+    }
+}
+
+extra["versionSet"] = false
+
+gradle.taskGraph.whenReady {
+    if (hasTask(":classes") && extra["versionSet"] == false) {
+        version = providers.exec {
+            commandLine("bash", "version.sh")
+        }.standardOutput.asText.get().trim()
+    }
+}
+
+afterEvaluate {
+    if (gradle.startParameter.taskNames.contains("publish")) {
+        version = providers.exec {
+            commandLine("bash", "version.sh", "-s")
+        }.standardOutput.asText.get().trim()
+        extra["versionSet"] = true
+
+        (publishing.publications["aglNexus"] as MavenPublication).version = version.toString()
+
+        if (version.toString().endsWith("-SNAPSHOT")) {
+            tasks.named("publish") {
+                setDependsOn(listOf("publishAglNexusPublicationToAglNexusSnapshotsRepository"))
+            }
+        } else {
+            tasks.named("publish") {
+                setDependsOn(listOf("publishAglNexusPublicationToAglNexusReleasesRepository"))
+            }
+        }
+    }
 }
