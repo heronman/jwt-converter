@@ -1,4 +1,4 @@
-import org.gradle.internal.extensions.stdlib.capitalized
+import net.agl.gradle.versionFromGit
 
 plugins {
     kotlin("jvm") version "1.9.25"
@@ -11,6 +11,7 @@ plugins {
 }
 
 group = "net.agl.security"
+version = versionFromGit(project.rootDir.absolutePath)
 
 java {
     toolchain {
@@ -22,6 +23,7 @@ java {
 
 repositories {
     mavenCentral()
+    maven { url = uri(findProperty("repo.proxy.url")!! as String) }
 }
 
 val mockitoAgent = configurations.create("mockitoAgent")
@@ -55,12 +57,8 @@ tasks {
 
 publishing {
     publications {
-        create<MavenPublication>("aglNexus") {
-            val projectVersion = project.version.toString()
-            version = if (projectVersion.endsWith("-SNAPSHOT")) projectVersion
-            else Regex("""^(\d+\.\d+\.\d+).+$""").matchEntire(projectVersion)?.groupValues?.get(1)
-                ?.plus("-SNAPSHOT")
-                ?: projectVersion
+        create<MavenPublication>("maven") {
+            version = project.version.toString()
             groupId = project.group.toString()
             artifactId = project.name
             from(components["java"])
@@ -68,47 +66,19 @@ publishing {
     }
 
     repositories {
-        val username = findProperty("agl.repo.publish.username")!! as String
-        val password = findProperty("agl.repo.publish.password")!! as String
-        listOf("agl.repo.url.releases", "agl.repo.url.snapshots").forEach {
-            maven {
-                name = "aglNexus${it.split(".").last().capitalized()}"
-                url = uri(findProperty(it)!! as String)
-                credentials {
-                    this.username = username
-                    this.password = password
-                }
-            }
-        }
-    }
-}
-
-extra["versionSet"] = false
-
-gradle.taskGraph.whenReady {
-    if (hasTask(":classes") && extra["versionSet"] == false) {
-        version = providers.exec {
-            commandLine("bash", "version.sh")
-        }.standardOutput.asText.get().trim()
-    }
-}
-
-afterEvaluate {
-    if (gradle.startParameter.taskNames.contains("publish")) {
-        version = providers.exec {
-            commandLine("bash", "version.sh", "-s")
-        }.standardOutput.asText.get().trim()
-        extra["versionSet"] = true
-
-        (publishing.publications["aglNexus"] as MavenPublication).version = version.toString()
-
-        if (version.toString().endsWith("-SNAPSHOT")) {
-            tasks.named("publish") {
-                setDependsOn(listOf("publishAglNexusPublicationToAglNexusSnapshotsRepository"))
-            }
-        } else {
-            tasks.named("publish") {
-                setDependsOn(listOf("publishAglNexusPublicationToAglNexusReleasesRepository"))
+        maven {
+            name = "maven"
+            url = uri(
+                findProperty(
+                    if (project.version.toString().endsWith("-SNAPSHOT"))
+                        "repo.publish.snapshots"
+                    else
+                        "repo.publish.releases"
+                )!! as String
+            )
+            credentials {
+                username = findProperty("repo.publish.username")!! as String
+                password = findProperty("repo.publish.password")!! as String
             }
         }
     }
