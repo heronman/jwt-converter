@@ -8,5 +8,5 @@ repositories {
 }
 
 dependencies {
-    implementation("net.agl.gradle:version-from-git:1.0.0")
+    implementation("net.agl.gradle:version-from-git:2.0.0-SNAPSHOT")
 }
