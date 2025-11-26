@@ -11,12 +11,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import net.agl.security.PermissionChecker.matchCurrentUserPermissions
 
-fun normalizePath(path: String?): String {
-    return path?.trim('/', ' ')
-        ?.replace(Regex("[/]{2,}"), "/")
-        .let { if (it.isNullOrBlank()) "*" else it }
-}
-
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonSerialize(using = PermissionSerializer::class)
 @JsonDeserialize(using = PermissionDeserializer::class)
@@ -24,6 +18,14 @@ open class Permission(target: String?, action: String?) {
     val target: String = normalizePath(target)
     val action: String = if (action.isNullOrBlank()) "*" else action
     val permission: String = "${this.target}:$action"
+
+    companion object {
+        fun normalizePath(path: String?): String {
+            return path?.trim('/', ' ')
+                ?.replace(Regex("[/]{2,}"), "/")
+                .let { if (it.isNullOrBlank()) "*" else it }
+        }
+    }
 
     constructor(permission: String) : this(permission.split(':', limit = 2))
 

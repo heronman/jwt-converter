@@ -31,11 +31,10 @@ class OAuth2JwtConfig {
     fun jwtUserIdExtractor(): GrantedAuthoritiesExtractor = JwtUserIdExtractor()
 
     @Bean
-    fun jwtAuthenticationConverter(ctx: ApplicationContext): Converter<Jwt, AbstractAuthenticationToken> {
-        val converter = JwtAuthenticationConverter()
-        converter.setJwtGrantedAuthoritiesConverter(JwtGrantedAuthoritiesConverter(ctx))
-        return converter
-    }
+    fun jwtAuthenticationConverter(ctx: ApplicationContext): Converter<Jwt, AbstractAuthenticationToken> =
+        object : JwtAuthenticationConverter() {init {
+            setJwtGrantedAuthoritiesConverter(JwtGrantedAuthoritiesConverter(ctx))
+        } }
 
     @Bean
     @ConfigurationPropertiesBinding

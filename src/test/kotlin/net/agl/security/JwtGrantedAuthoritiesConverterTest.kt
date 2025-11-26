@@ -25,13 +25,15 @@ class JwtGrantedAuthoritiesConverterTest {
             listOf("users/**:read", "organizations:*")
         )
         val authorities = converter.convert(jwt)
-        assert(authorities.filterIsInstance<UserIdAuthority>().any { it.userId == userId },
+        assert(
+            authorities.filterIsInstance<UserIdAuthority>().any { it.userId == userId },
             { "Expected User ID $userId is absent" })
 
         authorities.filterIsInstance<ScopeAuthority>()
             .map { it.scope }.forEach { assert(scopes.contains(it), { "Unexpected scope $it found in authorities" }) }
         scopes.forEach { scope ->
-            assert(authorities.filterIsInstance<ScopeAuthority>().any { s -> s.scope == scope },
+            assert(
+                authorities.filterIsInstance<ScopeAuthority>().any { s -> s.scope == scope },
                 { "Expected scope $scope is absent" })
         }
 
@@ -75,14 +77,16 @@ class JwtGrantedAuthoritiesConverterTest {
         val authorities = converter.convert(jwt)
         verify(jwt, times(1)).getClaimAsStringList("permissions")
 
-        assert(authorities.filterIsInstance<ClientIdAuthority>().any { it.clientId == userId },
+        assert(
+            authorities.filterIsInstance<ClientIdAuthority>().any { it.clientId == userId },
             { "Expected Client ID $userId is absent" })
 
         authorities.filterIsInstance<PermissionAuthority>()
             .map { it.permission }
             .forEach { assert(permissions.contains(it), { "Unexpected permission $it found in authorities" }) }
         permissions.forEach { perm ->
-            assert(authorities.filterIsInstance<PermissionAuthority>().any { p -> p.permission == perm },
+            assert(
+                authorities.filterIsInstance<PermissionAuthority>().any { p -> p.permission == perm },
                 { "Expected permission $perm is absent" })
         }
     }
@@ -126,7 +130,9 @@ class JwtGrantedAuthoritiesConverterTest {
         val roles = (accountRoles + realmRoles).filter { it.startsWith("ROLE_") }
         val parsedRoles = authorities.filterIsInstance<RoleAuthority>().map { it.roleName }
         assert(parsedRoles.containsAll(roles), { "Not all roles parsed" })
-        assert(roles.containsAll(parsedRoles), { "Found role authorities that aren't presented in the token or must be filtered out" })
+        assert(
+            roles.containsAll(parsedRoles),
+            { "Found role authorities that aren't presented in the token or must be filtered out" })
     }
 
     //
@@ -184,10 +190,10 @@ class JwtGrantedAuthoritiesConverterTest {
         `when`(ctx.getBeansOfType(GrantedAuthoritiesExtractor::class.java))
             .thenReturn(
                 mapOf(
-                    Pair("jwtRolesExtractor", JwtRolesExtractor(properties)),
-                    Pair("jwtPermissionsExtractor", JwtPermissionsExtractor(properties)),
-                    Pair("jwtScopesExtractor", JwtScopesExtractor()),
-                    Pair("jwtUserIdExtractor", JwtUserIdExtractor()),
+                    "jwtRolesExtractor" to JwtRolesExtractor(properties),
+                    "jwtPermissionsExtractor" to JwtPermissionsExtractor(properties),
+                    "jwtScopesExtractor" to JwtScopesExtractor(),
+                    "jwtUserIdExtractor" to JwtUserIdExtractor(),
                 )
             )
         return JwtGrantedAuthoritiesConverter(ctx)

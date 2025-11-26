@@ -2,10 +2,10 @@ package net.agl.security.extractors
 
 import net.agl.security.AglAuthProperties
 import net.agl.security.GrantedAuthoritiesExtractor
+import net.agl.security.Permission.Companion.normalizePath
 import net.agl.security.authorities.ClientIdAuthority
 import net.agl.security.authorities.PermissionAuthority
 import net.agl.security.authorities.UserIdAuthority
-import net.agl.security.normalizePath
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.oauth2.core.ClaimAccessor
 
@@ -19,7 +19,7 @@ class JwtPermissionsExtractor(val properties: AglAuthProperties) : GrantedAuthor
         if (!properties.useJwtPermissions && authorities.none { it is ClientIdAuthority }) {
             return listOf()
         }
-        val uid = authorities.filterIsInstance<UserIdAuthority>().find { true }?.let { it.userId }?.toString()
+        val uid = authorities.filterIsInstance<UserIdAuthority>().find { true }?.userId?.toString()
         return jwt.getClaimAsStringList("permissions")
             ?.map {
                 val (target, action) = it.split(":", limit = 2)

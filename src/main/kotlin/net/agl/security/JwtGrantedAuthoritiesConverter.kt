@@ -19,9 +19,8 @@ class JwtGrantedAuthoritiesConverter(private val ctx: ApplicationContext) :
             })
     }
 
-    override fun mapAuthorities(authorities: Collection<GrantedAuthority>?): Collection<GrantedAuthority> {
+    override fun mapAuthorities(authorities: Collection<GrantedAuthority>): Collection<GrantedAuthority> {
         return authorities
-            .orEmpty()
             .filterIsInstance<OidcUserAuthority>()
             .map { it.userInfo }
             .map { Jwt::class.cast(it) }
