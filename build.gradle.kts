@@ -12,6 +12,13 @@ plugins {
 
 group = "net.agl.security"
 version = versionFromGit(project.rootDir.absolutePath)
+val publishVersion = version.toString().let { version ->
+    Regex("^(\\d+\\.\\d+\\.\\d+)-(?!RELEASE).*$")
+        .find(version)
+        ?.let { it.groups[1]?.value }
+        ?.let { match -> "${match}-SNAPSHOT" }
+        ?: version
+}
 
 java {
     toolchain {
@@ -58,7 +65,7 @@ tasks {
 publishing {
     publications {
         create<MavenPublication>("maven") {
-            version = project.version.toString()
+            version = publishVersion
             groupId = project.group.toString()
             artifactId = project.name
             from(components["java"])
@@ -70,7 +77,7 @@ publishing {
             name = "maven"
             url = uri(
                 findProperty(
-                    if (project.version.toString().endsWith("-SNAPSHOT"))
+                    if (publishVersion.endsWith("-SNAPSHOT"))
                         "repo.publish.snapshots"
                     else
                         "repo.publish.releases"
