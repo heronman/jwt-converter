@@ -19,7 +19,8 @@ import java.util.regex.Pattern
 @EnableConfigurationProperties(AglAuthProperties::class)
 class OAuth2JwtConfig {
     @Bean
-    fun jwtPermissionsExtractor(properties: AglAuthProperties): GrantedAuthoritiesExtractor = JwtPermissionsExtractor(properties)
+    fun jwtPermissionsExtractor(properties: AglAuthProperties): GrantedAuthoritiesExtractor =
+        JwtPermissionsExtractor(properties)
 
     @Bean
     fun jwtRolesExtractor(properties: AglAuthProperties): GrantedAuthoritiesExtractor = JwtRolesExtractor(properties)
@@ -32,11 +33,16 @@ class OAuth2JwtConfig {
 
     @Bean
     fun jwtAuthenticationConverter(ctx: ApplicationContext): Converter<Jwt, AbstractAuthenticationToken> =
-        object : JwtAuthenticationConverter() {init {
-            setJwtGrantedAuthoritiesConverter(JwtGrantedAuthoritiesConverter(ctx))
-        } }
+        object : JwtAuthenticationConverter() {
+            init {
+                setJwtGrantedAuthoritiesConverter(JwtGrantedAuthoritiesConverter(ctx))
+            }
+        }
 
     @Bean
     @ConfigurationPropertiesBinding
-    fun patternConverter(): Converter<String, Pattern> = Converter<String, Pattern> { Pattern.compile(it) }
+    fun patternConverter(): Converter<String, Pattern> = object : Converter<String, Pattern> {
+        override fun convert(authValue: String): Pattern = Pattern.compile(authValue)
+    }
+
 }
