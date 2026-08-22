@@ -1,5 +1,3 @@
-import net.agl.gradle.versionFromGit
-
 plugins {
     kotlin("jvm") version "2.3.21"
     kotlin("plugin.spring") version "2.3.21"
@@ -11,14 +9,7 @@ plugins {
 }
 
 group = "net.agl.security"
-version = versionFromGit(project.rootDir.absolutePath)
-val publishVersion = version.toString().let { version ->
-    Regex("^(\\d+\\.\\d+\\.\\d+)-(?!RELEASE).*$")
-        .find(version)
-        ?.let { it.groups[1]?.value }
-        ?.let { match -> "${match}-SNAPSHOT" }
-        ?: version
-}
+version = "0.3.0-SNAPSHOT"
 
 java {
     toolchain {
@@ -65,7 +56,7 @@ tasks {
 publishing {
     publications {
         create<MavenPublication>("maven") {
-            version = publishVersion
+            version = project.version as String
             groupId = project.group.toString()
             artifactId = project.name
             from(components["java"])
@@ -77,7 +68,7 @@ publishing {
             name = "maven"
             url = uri(
                 findProperty(
-                    if (publishVersion.endsWith("-SNAPSHOT"))
+                    if (version.toString().endsWith("-SNAPSHOT"))
                         "repo.publish.snapshots"
                     else
                         "repo.publish.releases"
