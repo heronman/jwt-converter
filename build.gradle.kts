@@ -21,7 +21,6 @@ java {
 
 repositories {
     mavenCentral()
-    maven { url = uri(findProperty("repo.proxy.url")!! as String) }
 }
 
 val mockitoAgent = configurations.create("mockitoAgent")
@@ -65,15 +64,9 @@ publishing {
 
     repositories {
         maven {
-            name = "maven"
-            url = uri(
-                findProperty(
-                    if (version.toString().endsWith("-SNAPSHOT"))
-                        "repo.publish.snapshots"
-                    else
-                        "repo.publish.releases"
-                )!! as String
-            )
+            name = "GitHubPackages"
+            url = uri((findProperty("repo.publish.url") as String?)
+                ?: "https://maven.pkg.github.com/heronman/jwt-converter")
             credentials {
                 username = findProperty("repo.publish.username")!! as String
                 password = findProperty("repo.publish.password")!! as String
