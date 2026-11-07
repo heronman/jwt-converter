@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "net.agl.security"
-version = "0.3.0-SNAPSHOT"
+version = "0.3.1"
 
 java {
     toolchain {
@@ -65,8 +65,7 @@ publishing {
     repositories {
         maven {
             name = "GitHubPackages"
-            url = uri((findProperty("repo.publish.url") as String?)
-                ?: "https://maven.pkg.github.com/heronman/jwt-converter")
+            url = uri(findProperty("repo.publish.url") as String)
             credentials {
                 username = findProperty("repo.publish.username")!! as String
                 password = findProperty("repo.publish.password")!! as String

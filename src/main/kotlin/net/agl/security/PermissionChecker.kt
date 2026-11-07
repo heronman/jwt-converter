@@ -74,8 +74,6 @@ object PermissionChecker {
                 .firstOrNull()?.clientId
             ?: return false
 
-        return false
-
         val userPermissions = authorities.filterIsInstance<Permission>()
 
         return matchPermissions(target, action, userPermissions, userId.toString(), *args)
