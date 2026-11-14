@@ -65,7 +65,17 @@ publishing {
     repositories {
         maven {
             name = "GitHubPackages"
-            url = uri(findProperty("repo.publish.url") as String)
+            url = (findProperty(
+                if (version.toString().endsWith("-SNAPSHOT"))
+                    "repo.publish.snapshots" else "repo.publish.releases"
+            )
+                ?: findProperty("repo.publish.url")
+                ?: throw RuntimeException(
+                    """Can't find repository URL for Maven publish.
+                    |  Please set up repo.publish.snapshots / repo.publish.releases or repo.publish.url property
+                    |  in your ~/.gradle/gradle.properties file""".trimMargin()
+                )
+                    ).let(::uri)
             credentials {
                 username = findProperty("repo.publish.username")!! as String
                 password = findProperty("repo.publish.password")!! as String
