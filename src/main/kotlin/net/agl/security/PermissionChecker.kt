@@ -62,7 +62,7 @@ object PermissionChecker {
 
     fun matchCurrentUserPermissions(target: String, action: String, vararg args: Any): Boolean {
         // no authentication -> fail
-        val authorities = SecurityContextHolder.getContext()?.authentication?.authorities
+        val authorities = SecurityContextHolder.getContext().authentication?.authorities
             ?: return false
 
         // no User ID / Client ID -> fail
