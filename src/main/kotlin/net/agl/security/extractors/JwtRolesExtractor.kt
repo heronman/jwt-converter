@@ -18,20 +18,20 @@ class JwtRolesExtractor(private val properties: AglAuthProperties) : GrantedAuth
             return listOf()
         }
 
-        return ((jwt.getClaimAsMap("realm_access")
+        return jwt.getClaimAsMap("realm_access")
             ?.getOrDefault("roles", null)
-            ?.takeIf { it is Collection<*> && it.all { e -> e is String } }
-            ?.let { HashSet(it as Collection<String>) }
-            ?: setOf()) +
-                (jwt.getClaimAsMap("resource_access")
-                    ?.getOrDefault("account", null)
-                    ?.takeIf { it is Map<*, *> }
-                    ?.let { it as Map<String, Any> }
-                    ?.getOrDefault("roles", emptyList<String>())
-                    ?.takeIf { it is Collection<*> && it.all { e -> e is String } }
-                    ?.let { HashSet(it as Collection<String>) }
-                    ?: setOf()))
-            .filter { properties.jwtRolePattern?.let { p -> p.matcher(it) }?.matches() ?: true }
-            .map { RoleAuthority(it) }
+            ?.takeIf { it is Collection<*> }
+            ?.let { HashSet(it as Collection<*>) }
+            ?.mapNotNull {
+                when {
+                    it !is String -> null
+                    it.isBlank() -> null
+                    properties.jwtRolePrefix.isNullOrBlank() -> it
+                    it.startsWith(properties.jwtRolePrefix) -> it
+                    else -> null
+                }
+            }
+            .orEmpty()
+            .map(::RoleAuthority)
     }
 }
