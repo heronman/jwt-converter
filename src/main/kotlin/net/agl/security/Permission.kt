@@ -14,10 +14,20 @@ import net.agl.security.PermissionChecker.matchCurrentUserPermissions
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonSerialize(using = PermissionSerializer::class)
 @JsonDeserialize(using = PermissionDeserializer::class)
-open class Permission(target: String?, action: String?) {
-    val target: String = normalizePath(target)
-    val action: String = if (action.isNullOrBlank()) "*" else action
-    val permission: String = "${this.target}:$action"
+open class Permission(target: String, action: String) {
+    val target: String
+    val action: String
+    val permission: String
+
+    init {
+        if (target.isBlank())
+            throw IllegalArgumentException("target can't be empty")
+        if (action.isBlank())
+            throw IllegalArgumentException("action can't be empty")
+        this.target = normalizePath(target)
+        this.action = action
+        permission = "${this.target}:$action"
+    }
 
     companion object {
         fun normalizePath(path: String?): String {

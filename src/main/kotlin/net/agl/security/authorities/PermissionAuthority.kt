@@ -5,8 +5,8 @@ import org.springframework.security.core.GrantedAuthority
 
 open class PermissionAuthority: Permission, GrantedAuthority {
 
-    constructor(target: String?, action: String?) : super(target, action)
-    constructor(combinedPermission: String) : super(combinedPermission)
+    constructor(target: String, action: String) : super(target, action)
+    constructor(combinedPermission: String) : super(combinedPermission.removePrefix("permit:"))
 
     override fun getAuthority(): String {
         return "permit:$permission"
