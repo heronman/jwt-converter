@@ -1,5 +1,6 @@
 package net.agl.security
 
+import net.agl.security.authorities.ClientIdAuthority
 import net.agl.security.authorities.UserIdAuthority
 import org.springframework.security.core.context.SecurityContextHolder
 import java.util.*
@@ -61,14 +62,16 @@ object PermissionChecker {
 
     fun matchCurrentUserPermissions(target: String, action: String, vararg args: Any): Boolean {
         // no authentication -> fail
-        val authorities = SecurityContextHolder.getContext()?.authentication?.authorities
+        val authorities = SecurityContextHolder.getContext().authentication?.authorities
             ?: return false
 
-        // no User ID -> fail
+        // no User ID / Client ID -> fail
         val userId = authorities
             .filterIsInstance<UserIdAuthority>()
-            .firstOrNull()
-            ?.userId
+            .firstOrNull()?.userId
+            ?: authorities
+                .filterIsInstance<ClientIdAuthority>()
+                .firstOrNull()?.clientId
             ?: return false
 
         val userPermissions = authorities.filterIsInstance<Permission>()
