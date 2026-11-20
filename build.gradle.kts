@@ -64,7 +64,7 @@ publishing {
 
     repositories {
         maven {
-            name = "GitHubPackages"
+            name = "MavenPackages"
             url = (findProperty(
                 if (version.toString().endsWith("-SNAPSHOT"))
                     "repo.publish.snapshots" else "repo.publish.releases"
